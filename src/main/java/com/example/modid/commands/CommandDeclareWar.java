@@ -28,7 +28,7 @@ public class CommandDeclareWar extends CommandBase {
             EntityPlayer player = (EntityPlayer) sender;
             FactionManager factionManager = FactionManager.getInstance();
 
-            Faction playerFaction = getPlayerFaction(player);
+            Faction playerFaction = getPlayerFaction(player).orElse(null);
             Faction enemyFaction = factionManager.getFaction(args[0]);
 
             if (playerFaction != null && enemyFaction != null) {

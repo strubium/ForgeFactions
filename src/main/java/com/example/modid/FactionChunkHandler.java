@@ -1,6 +1,7 @@
 package com.example.modid;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -12,12 +13,15 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class FactionChunkHandler {
 
     // Optimized data structure to quickly look up which faction owns a chunk
     private final Map<ChunkPos, Faction> chunkOwnershipMap = new HashMap<>();
+    // Optimized map for storing player faction for fast lookup
+    private static final Map<EntityPlayer, Faction> playerFactionMap = new HashMap<>();
 
     // Register claimed chunks into the map when the server starts or the mod initializes
     public void registerClaimedChunks() {
@@ -36,70 +40,58 @@ public class FactionChunkHandler {
             EntityPlayer player = event.player;
             ChunkPos playerChunkPos = new ChunkPos(player.chunkCoordX, player.chunkCoordZ);
 
-            if (chunkOwnershipMap.containsKey(playerChunkPos)) {
-                Faction faction = chunkOwnershipMap.get(playerChunkPos);
-
-                if (!faction.getMembers().contains(player)) {
-                    player.sendMessage(new TextComponentString("Warning: You are in " + faction.getName() + "'s territory!"));
-                }
+            Faction faction = chunkOwnershipMap.get(playerChunkPos);
+            if (faction != null && !faction.getMembers().contains(player)) {
+                player.sendMessage(new TextComponentString("Warning: You are in " + faction.getName() + "'s territory!"));
             }
         }
     }
 
-    // Prevent unauthorized block placement
+    // Prevent unauthorized block placement or breaking
     @SubscribeEvent
     public void onBlockBreak(BlockEvent.BreakEvent event) {
-        ChunkPos chunkPos = new ChunkPos(event.getPos());
-        EntityPlayer player = event.getPlayer();
-
-        if (chunkOwnershipMap.containsKey(chunkPos)) {
-            Faction faction = chunkOwnershipMap.get(chunkPos);
-            Faction playerFaction = getPlayerFaction(player);  // Implement this helper function
-
-            // Check if the player is a member of the faction or if their faction is at war
-            if (playerFaction != null && (faction.getMembers().contains(player) || FactionManager.getInstance().areAtWar(faction, playerFaction))) {
-                // Allow the block break
-            } else {
-                event.setCanceled(true);
-                player.sendMessage(new TextComponentString("You cannot break blocks in " + faction.getName() + "'s territory!"));
-            }
-        }
+        handleBlockAction(event.getPos(), event.getPlayer(), event, false);
     }
 
-    // Similarly for block placement...
     @SubscribeEvent
     public void onBlockPlace(BlockEvent.PlaceEvent event) {
-        ChunkPos chunkPos = new ChunkPos(event.getPos());
-        EntityPlayer player = event.getPlayer();
+        handleBlockAction(event.getPos(), event.getPlayer(), event, true);
+    }
 
-        if (chunkOwnershipMap.containsKey(chunkPos)) {
-            Faction faction = chunkOwnershipMap.get(chunkPos);
-            Faction playerFaction = getPlayerFaction(player);
+    // Helper to handle block breaking and placing logic
+    private void handleBlockAction(BlockPos blockPos, EntityPlayer player, BlockEvent event, boolean isPlacing) {
+        ChunkPos chunkPos = new ChunkPos(blockPos);
+        Faction faction = chunkOwnershipMap.get(chunkPos);
 
-            if (playerFaction != null && (faction.getMembers().contains(player) || FactionManager.getInstance().areAtWar(faction, playerFaction))) {
-                // Allow the block place
-            } else {
+        if (faction != null) {
+            Faction playerFaction = getPlayerFaction(player).orElse(null);
+
+            // Check if the player is in the faction or their faction is at war with the owner faction
+            if (playerFaction == null || (!faction.getMembers().contains(player)
+                    && !FactionManager.getInstance().areAtWar(faction, playerFaction))) {
                 event.setCanceled(true);
-                player.sendMessage(new TextComponentString("You cannot place blocks in " + faction.getName() + "'s territory!"));
+                player.sendMessage(new TextComponentString("You cannot " + (isPlacing ? "place" : "break") +
+                        " blocks in " + faction.getName() + "'s territory!"));
             }
         }
     }
 
-    // Helper method to find which faction a player belongs to
-    public static Faction getPlayerFaction(EntityPlayer player) {
-        for (Faction faction : FactionManager.getInstance().getFactions()) {
-            if (faction.getMembers().contains(player)) {
-                return faction;
+    // Helper method to find which faction a player belongs to using an Optional
+    public static Optional<Faction> getPlayerFaction(EntityPlayer player) {
+        return Optional.ofNullable(playerFactionMap.computeIfAbsent(player, p -> {
+            for (Faction faction : FactionManager.getInstance().getFactions()) {
+                if (faction.getMembers().contains(p)) {
+                    return faction;
+                }
             }
-        }
-        return null;
+            return null;
+        }));
     }
 
     // Load claimed chunks into the map when the chunk loads
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event) {
         ChunkPos chunkPos = event.getChunk().getPos();
-
         for (Faction faction : FactionManager.getInstance().getFactions()) {
             if (faction.getClaimedChunks().contains(chunkPos)) {
                 chunkOwnershipMap.put(chunkPos, faction);
@@ -113,5 +105,13 @@ public class FactionChunkHandler {
         ChunkPos chunkPos = event.getChunk().getPos();
         chunkOwnershipMap.remove(chunkPos);
     }
-}
 
+    // Optionally, refresh player-faction map on mod initialization or player login
+    public void registerPlayersInFactions() {
+        for (Faction faction : FactionManager.getInstance().getFactions()) {
+            for (EntityPlayer player : faction.getMembers()) {
+                playerFactionMap.put(player, faction);
+            }
+        }
+    }
+}
