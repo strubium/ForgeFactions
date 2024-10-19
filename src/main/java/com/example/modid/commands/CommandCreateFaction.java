@@ -22,9 +22,26 @@ public class CommandCreateFaction extends CommandBase {
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
         if (sender instanceof EntityPlayer) {
             EntityPlayer player = (EntityPlayer) sender;
+
+            // Check if the player provided a faction name
+            if (args.length == 0) {
+                player.sendMessage(new TextComponentString("Error: You must specify a faction name!"));
+                return;
+            }
+
             String factionName = args[0];
+
+            // Check if the faction already exists
+            if (FactionManager.getInstance().factionExists(factionName)) {
+                player.sendMessage(new TextComponentString("Error: A faction with that name already exists."));
+                return;
+            }
+
+            // Create the faction if the name is valid and doesn't exist
             FactionManager.getInstance().createFaction(factionName, player);
             player.sendMessage(new TextComponentString("Faction " + factionName + " created!"));
+        } else {
+            sender.sendMessage(new TextComponentString("This command can only be used by a player."));
         }
     }
 }

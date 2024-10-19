@@ -1,12 +1,15 @@
 package com.example.modid;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.World;
 
 import java.util.*;
 
 public class FactionManager {
     private static FactionManager instance;
     private Map<String, Faction> factions;
+    private FactionSavedData savedData;
+
 
     private FactionManager() {
         factions = new HashMap<>();
@@ -17,6 +20,14 @@ public class FactionManager {
             instance = new FactionManager();
         }
         return instance;
+    }
+
+    public void initialize(World world) {
+        this.savedData = FactionSavedData.get(world);
+        this.factions = savedData.getFactions();  // Load the saved factions
+        if (factions == null) {
+            factions = new HashMap<>();
+        }
     }
 
     public Faction createFaction(String name, EntityPlayer leader) {
@@ -50,5 +61,15 @@ public class FactionManager {
     public boolean areAtWar(Faction faction1, Faction faction2) {
         return faction1.isAtWarWith(faction2);
     }
-}
 
+    // New method to check if a faction with the given name exists
+    public boolean factionExists(String factionName) {
+        return factions.containsKey(factionName);  // Check if the faction name exists in the map
+    }
+
+    public void loadFactions() {
+        if (savedData != null) {
+            factions = savedData.getFactions();
+        }
+    }
+}
