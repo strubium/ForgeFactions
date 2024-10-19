@@ -1,86 +1,65 @@
 package com.example.modid;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.storage.WorldSavedData;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 
+import java.io.*;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class FactionSavedData extends WorldSavedData {
+public class FactionSavedData {
 
-    private static final String DATA_NAME = "faction_data";
+    private static final String DATA_FILE = "faction_data.json"; // Name of the JSON file
     private Map<String, Faction> factions;
+    private final Path savePath;
 
-    public FactionSavedData() {
-        super(DATA_NAME);
+    private final Gson gson;
+
+    public FactionSavedData(World world) {
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
+        this.savePath = Paths.get(world.getSaveHandler().getWorldDirectory().getPath(), DATA_FILE);
+        load();
     }
 
-    public FactionSavedData(String name) {
-        super(name);
-    }
-
-    public static FactionSavedData get(World world) {
-        FactionSavedData data = (FactionSavedData) world.getPerWorldStorage().getOrLoadData(FactionSavedData.class, DATA_NAME);
-        if (data == null) {
-            data = new FactionSavedData();
-            world.getPerWorldStorage().setData(DATA_NAME, data);
+    public void save() {
+        try (BufferedWriter writer = Files.newBufferedWriter(savePath)) {
+            gson.toJson(factions, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return data;
     }
 
-    @Override
-    public void readFromNBT(NBTTagCompound nbt) {
-        // Load factions from NBT
-        NBTTagList factionList = nbt.getTagList("Factions", 10); // 10 is the tag type for compound
-        for (int i = 0; i < factionList.tagCount(); i++) {
-            NBTTagCompound factionNBT = factionList.getCompoundTagAt(i);
-
-            // Extract faction name
-            String factionName = factionNBT.getString("Name");
-
-            // Load leader UUID and resolve the player
-            String leaderUUID = factionNBT.getString("Leader");
-            EntityPlayer leader = resolvePlayerFromUUID(leaderUUID);  // You'll need to implement this method
-
-            if (leader != null) {
-                // Create the faction with the loaded leader
-                Faction faction = new Faction(factionName, leader);
-
-                // Read the rest of the faction data
-                faction.readFromNBT(factionNBT);
-
-                // Add the faction to the manager's faction map
-                factions.put(factionName, faction);
-            } else {
-                // Handle cases where the leader might not be found
-                System.err.println("Leader not found for faction: " + factionName);
+    public void load() {
+        if (Files.exists(savePath)) {
+            try (BufferedReader reader = Files.newBufferedReader(savePath)) {
+                Type factionMapType = new TypeToken<Map<String, Faction>>() {}.getType();
+                factions = gson.fromJson(reader, factionMapType);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+        } else {
+            factions = new HashMap<>(); // Initialize factions if the file does not exist
         }
-    }
-
-
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
-        // Save factions to NBT
-        NBTTagList factionList = new NBTTagList();
-        for (Faction faction : factions.values()) {
-            NBTTagCompound factionNBT = new NBTTagCompound();
-            faction.writeToNBT(factionNBT);
-            factionList.appendTag(factionNBT);
-        }
-        compound.setTag("Factions", factionList);
-        return compound;
     }
 
     public void setFactions(Map<String, Faction> factions) {
         this.factions = factions;
-        markDirty();  // Mark as needing to be saved
+        save();  // Save whenever factions are set
     }
 
     public Map<String, Faction> getFactions() {
@@ -101,6 +80,4 @@ public class FactionSavedData extends WorldSavedData {
         // Return null if the player isn't found
         return null;
     }
-
 }
-

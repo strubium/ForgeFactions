@@ -11,23 +11,16 @@ public class FactionManager {
     private FactionSavedData savedData;
 
 
-    private FactionManager() {
-        factions = new HashMap<>();
+    private FactionManager(World world) {
+        this.factions = new HashMap<>();
+        this.savedData = new FactionSavedData(world);
     }
 
-    public static FactionManager getInstance() {
+    public static FactionManager getInstance(World world) {
         if (instance == null) {
-            instance = new FactionManager();
+            instance = new FactionManager(world);
         }
         return instance;
-    }
-
-    public void initialize(World world) {
-        this.savedData = FactionSavedData.get(world);
-        this.factions = savedData.getFactions();  // Load the saved factions
-        if (factions == null) {
-            factions = new HashMap<>();
-        }
     }
 
     public Faction createFaction(String name, EntityPlayer leader) {
@@ -45,7 +38,11 @@ public class FactionManager {
     }
 
     public Set<Faction> getFactions() {
-        return Collections.unmodifiableSet(new HashSet<>(factions.values()));  // Return an unmodifiable copy of the factions set
+        // Get the map of factions
+        Map<String, Faction> factionsMap = savedData.getFactions();
+
+        // Return an unmodifiable set of the factions
+        return Collections.unmodifiableSet(new HashSet<>(factionsMap.values()));
     }
 
     public void declareWar(Faction faction1, Faction faction2) {
@@ -65,11 +62,5 @@ public class FactionManager {
     // New method to check if a faction with the given name exists
     public boolean factionExists(String factionName) {
         return factions.containsKey(factionName);  // Check if the faction name exists in the map
-    }
-
-    public void loadFactions() {
-        if (savedData != null) {
-            factions = savedData.getFactions();
-        }
     }
 }

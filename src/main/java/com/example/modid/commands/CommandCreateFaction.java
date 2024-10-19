@@ -32,13 +32,13 @@ public class CommandCreateFaction extends CommandBase {
             String factionName = args[0];
 
             // Check if the faction already exists
-            if (FactionManager.getInstance().factionExists(factionName)) {
+            if (FactionManager.getInstance(sender.getEntityWorld()).factionExists(factionName)) {
                 player.sendMessage(new TextComponentString("Error: A faction with that name already exists."));
                 return;
             }
 
             // Create the faction if the name is valid and doesn't exist
-            FactionManager.getInstance().createFaction(factionName, player);
+            FactionManager.getInstance(sender.getEntityWorld()).createFaction(factionName, player);
             player.sendMessage(new TextComponentString("Faction " + factionName + " created!"));
         } else {
             sender.sendMessage(new TextComponentString("This command can only be used by a player."));

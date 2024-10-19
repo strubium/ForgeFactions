@@ -28,11 +28,6 @@ public class ExampleMod {
     }
 
     @Mod.EventHandler
-    public void init(FMLInitializationEvent event){
-        NetworkRegistry.INSTANCE.registerGuiHandler(ExampleMod.instance, new GuiHandler());
-    }
-
-    @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event){
         event.registerServerCommand(new CommandCreateFaction());
         event.registerServerCommand(new CommandListFactions());

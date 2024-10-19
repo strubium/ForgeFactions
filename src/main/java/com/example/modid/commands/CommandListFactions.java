@@ -26,7 +26,7 @@ public class CommandListFactions extends CommandBase {
         if (sender instanceof EntityPlayer) {
             EntityPlayer player = (EntityPlayer) sender;
 
-            Set<Faction> factions = FactionManager.getInstance().getFactions();
+            Set<Faction> factions = FactionManager.getInstance(sender.getEntityWorld()).getFactions();
 
             if (factions.isEmpty()) {
                 player.sendMessage(new TextComponentString("There are no factions currently."));

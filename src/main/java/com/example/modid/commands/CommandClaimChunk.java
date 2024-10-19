@@ -26,7 +26,6 @@ public class CommandClaimChunk extends CommandBase {
         if (sender instanceof EntityPlayerMP) {
             EntityPlayerMP player = (EntityPlayerMP) sender;
 
-            FactionManager factionManager = FactionManager.getInstance();
             Faction playerFaction = getPlayerFaction(player);
 
             if (playerFaction != null) {
@@ -52,7 +51,7 @@ public class CommandClaimChunk extends CommandBase {
     }
 
     private Faction getPlayerFaction(EntityPlayerMP player) {
-        for (Faction faction : FactionManager.getInstance().getFactions()) {
+        for (Faction faction : FactionManager.getInstance(player.getEntityWorld()).getFactions()) {
             if (faction.getMembers().contains(player)) {
                 return faction;
             }

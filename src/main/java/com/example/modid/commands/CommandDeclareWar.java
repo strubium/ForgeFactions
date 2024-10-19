@@ -26,7 +26,7 @@ public class CommandDeclareWar extends CommandBase {
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
         if (sender instanceof EntityPlayer) {
             EntityPlayer player = (EntityPlayer) sender;
-            FactionManager factionManager = FactionManager.getInstance();
+            FactionManager factionManager = FactionManager.getInstance(server.getEntityWorld());
 
             Faction playerFaction = getPlayerFaction(player).orElse(null);
             Faction enemyFaction = factionManager.getFaction(args[0]);

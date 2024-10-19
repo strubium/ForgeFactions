@@ -23,15 +23,6 @@ public class FactionChunkHandler {
     // Optimized map for storing player faction for fast lookup
     private static final Map<EntityPlayer, Faction> playerFactionMap = new HashMap<>();
 
-    // Register claimed chunks into the map when the server starts or the mod initializes
-    public void registerClaimedChunks() {
-        for (Faction faction : FactionManager.getInstance().getFactions()) {
-            Set<ChunkPos> claimedChunks = faction.getClaimedChunks();
-            for (ChunkPos chunkPos : claimedChunks) {
-                chunkOwnershipMap.put(chunkPos, faction);
-            }
-        }
-    }
 
     // Listen to when a player enters a new chunk
     @SubscribeEvent
@@ -68,7 +59,7 @@ public class FactionChunkHandler {
 
             // Check if the player is in the faction or their faction is at war with the owner faction
             if (playerFaction == null || (!faction.getMembers().contains(player)
-                    && !FactionManager.getInstance().areAtWar(faction, playerFaction))) {
+                    && !FactionManager.getInstance(player.getEntityWorld()).areAtWar(faction, playerFaction))) {
                 event.setCanceled(true);
                 player.sendMessage(new TextComponentString("You cannot " + (isPlacing ? "place" : "break") +
                         " blocks in " + faction.getName() + "'s territory!"));
@@ -79,7 +70,7 @@ public class FactionChunkHandler {
     // Helper method to find which faction a player belongs to using an Optional
     public static Optional<Faction> getPlayerFaction(EntityPlayer player) {
         return Optional.ofNullable(playerFactionMap.computeIfAbsent(player, p -> {
-            for (Faction faction : FactionManager.getInstance().getFactions()) {
+            for (Faction faction : FactionManager.getInstance(player.getEntityWorld()).getFactions()) {
                 if (faction.getMembers().contains(p)) {
                     return faction;
                 }
@@ -92,7 +83,7 @@ public class FactionChunkHandler {
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event) {
         ChunkPos chunkPos = event.getChunk().getPos();
-        for (Faction faction : FactionManager.getInstance().getFactions()) {
+        for (Faction faction : FactionManager.getInstance(event.getWorld()).getFactions()) {
             if (faction.getClaimedChunks().contains(chunkPos)) {
                 chunkOwnershipMap.put(chunkPos, faction);
             }
@@ -104,14 +95,5 @@ public class FactionChunkHandler {
     public void onChunkUnload(ChunkEvent.Unload event) {
         ChunkPos chunkPos = event.getChunk().getPos();
         chunkOwnershipMap.remove(chunkPos);
-    }
-
-    // Optionally, refresh player-faction map on mod initialization or player login
-    public void registerPlayersInFactions() {
-        for (Faction faction : FactionManager.getInstance().getFactions()) {
-            for (EntityPlayer player : faction.getMembers()) {
-                playerFactionMap.put(player, faction);
-            }
-        }
     }
 }
