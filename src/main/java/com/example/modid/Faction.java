@@ -12,9 +12,6 @@ public class Faction {
     private EntityPlayer leader;
     private Set<EntityPlayer> members;
     private Set<ChunkPos> claimedChunks;
-
-
-    @Expose(serialize = false, deserialize = false)
     private Set<Faction> enemies;  // Track factions at war
 
     public Faction(String name, EntityPlayer leader) {
@@ -46,6 +43,19 @@ public class Faction {
     public Set<EntityPlayer> getMembers() {
         return members;
     }
+    public void setMembers(Set<EntityPlayer> members) {
+        this.members.clear();
+        this.members.addAll(members); // Set new members
+    }
+
+    public Set<Faction> getEnemies() {
+        return enemies;
+    }
+
+    public void setEnemies(Set<Faction> enemies) {
+        this.enemies.clear();
+        this.enemies.addAll(enemies); // Set new enemies
+    }
 
     public void addMember(EntityPlayer player) {
         members.add(player);
@@ -59,8 +69,14 @@ public class Faction {
         return claimedChunks;
     }
 
+    public void setClaimedChunks(Set<ChunkPos> claimedChunks) {
+        this.claimedChunks.clear();
+        this.claimedChunks.addAll(claimedChunks); // Set new claimed chunks
+    }
+
     public void claimChunk(ChunkPos chunkPos) {
         claimedChunks.add(chunkPos);
+        FactionManager.getInstance(this.leader.getEntityWorld()).saveFactions();
     }
 
     public void unclaimChunk(ChunkPos chunkPos) {
@@ -82,7 +98,6 @@ public class Faction {
     public void setName(String name) {
         this.name = name;
     }
-
 
     public void setLeader(EntityPlayer leader) {
         this.leader = leader;

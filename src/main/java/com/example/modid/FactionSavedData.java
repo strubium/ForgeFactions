@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,8 +43,16 @@ public class FactionSavedData {
             String jsonOutput = gson.toJson(factions);
             System.out.println(jsonOutput); // Print the JSON for validation
             writer.write(jsonOutput);
+
             // Replace the original file with the temporary file atomically
-            Files.move(tempFile, savePath);
+            try {
+                Files.move(tempFile, savePath);
+            } catch (FileAlreadyExistsException e) {
+                // If the file already exists, overwrite it
+                ExampleMod.LOGGER.warn("File already exists, overwriting: " + savePath);
+                Files.delete(savePath); // Delete the existing file
+                Files.move(tempFile, savePath); // Move the temp file to the original path
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

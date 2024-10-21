@@ -7,7 +7,7 @@ import java.util.*;
 
 public class FactionManager {
     private static FactionManager instance;
-    private Map<String, Faction> factions;  // Now synchronized with FactionSavedData
+    private static Map<String, Faction> factions;  // Now synchronized with FactionSavedData
     private FactionSavedData savedData;
 
     private FactionManager(World world) {
@@ -32,8 +32,12 @@ public class FactionManager {
     }
 
     // Get an existing faction by name
-    public Faction getFaction(String name) {
+    public static Faction getFaction(String name) {
         return factions.get(name);
+    }
+
+    public void saveFactions() {
+        savedData.setFactions(factions);
     }
 
     // Disband a faction and save the updated factions map
