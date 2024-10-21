@@ -48,7 +48,7 @@ public class FactionAdapter extends TypeAdapter<Faction> {
         }
         out.endArray();
 
-        // Serialize enemies as a set of faction names (or IDs if you prefer)
+        // Serialize enemies as a set of faction names
         out.name("enemies");
         out.beginArray();
         for (Faction enemy : faction.getEnemies()) {
@@ -83,7 +83,8 @@ public class FactionAdapter extends TypeAdapter<Faction> {
                 case "members":
                     in.beginArray();
                     while (in.hasNext()) {
-                        UUID memberUUID = UUID.fromString(in.nextString());
+                        String memberUUIDString = in.nextString();
+                        UUID memberUUID = UUID.fromString(memberUUIDString);
                         EntityPlayer member = resolvePlayerByUUID(memberUUID);
                         if (member != null) {
                             members.add(member);
@@ -94,8 +95,8 @@ public class FactionAdapter extends TypeAdapter<Faction> {
                 case "claimedChunks":
                     in.beginArray();
                     while (in.hasNext()) {
-                        int x = 0, z = 0;
                         in.beginObject();
+                        int x = 0, z = 0;
                         while (in.hasNext()) {
                             String chunkField = in.nextName();
                             if (chunkField.equals("x")) {
