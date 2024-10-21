@@ -97,18 +97,4 @@ public class FactionSavedData {
         return factions;
     }
 
-    private EntityPlayerMP resolvePlayerFromUUID(String uuidString) {
-        UUID uuid = UUID.fromString(uuidString);
-
-        // Get the Minecraft server instance
-        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-
-        if (server != null) {
-            // Use the server instance to get the player by UUID
-            return server.getPlayerList().getPlayerByUUID(uuid);
-        }
-
-        // Return null if the player isn't found
-        return null;
-    }
 }

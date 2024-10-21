@@ -1,13 +1,17 @@
 package com.example.modid.commands;
 
 import com.example.modid.Faction;
-import com.example.modid.FactionManager;
+import com.example.modid.FactionSavedData;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
+
+import java.util.UUID;
 
 public class CommandClaimChunk extends CommandBase {
 
@@ -25,14 +29,22 @@ public class CommandClaimChunk extends CommandBase {
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
         if (sender instanceof EntityPlayerMP) {
             EntityPlayerMP player = (EntityPlayerMP) sender;
+            World world = player.getEntityWorld();
 
-            Faction playerFaction = getPlayerFaction(player);
+            // Get the FactionSavedData instance to access and modify factions
+            FactionSavedData factionData = new FactionSavedData(world);
+
+            // Retrieve the player's faction
+            Faction playerFaction = getPlayerFaction(player, factionData);
 
             if (playerFaction != null) {
                 ChunkPos chunkPos = new ChunkPos(player.chunkCoordX, player.chunkCoordZ);
 
+                // Check if the chunk is already claimed by the faction
                 if (!playerFaction.getClaimedChunks().contains(chunkPos)) {
-                    playerFaction.claimChunk(chunkPos);
+                    playerFaction.claimChunk(chunkPos);  // Claim the chunk for the faction
+                    factionData.save();  // Save the updated faction data
+
                     player.sendMessage(new TextComponentString("You have claimed the chunk at " + chunkPos.toString() + " for your faction."));
                 } else {
                     player.sendMessage(new TextComponentString("This chunk is already claimed by your faction."));
@@ -50,10 +62,15 @@ public class CommandClaimChunk extends CommandBase {
         return 0;  // All players can use this command
     }
 
-    private Faction getPlayerFaction(EntityPlayerMP player) {
-        for (Faction faction : FactionManager.getInstance(player.getEntityWorld()).getFactions()) {
-            if (faction.getMembers().contains(player)) {
-                return faction;
+    private Faction getPlayerFaction(EntityPlayerMP player, FactionSavedData factionData) {
+        UUID playerUUID = player.getUniqueID();  // Get the player's UUID
+
+        for (Faction faction : factionData.getFactions().values()) {
+            // Loop through each member in the faction, which are EntityPlayer objects
+            for (EntityPlayer member : faction.getMembers()) {
+                if (member.getUniqueID().equals(playerUUID)) {
+                    return faction;  // Return the faction if the player's UUID matches a member's UUID
+                }
             }
         }
         return null;
