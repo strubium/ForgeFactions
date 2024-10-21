@@ -36,6 +36,13 @@ public class FactionManager {
         return factions.get(name);
     }
 
+    public static Optional<Faction> getFactionByPlayer(EntityPlayer player) {
+        return factions.values().stream()
+                .filter(faction -> faction.getMembers().contains(player))
+                .findFirst();
+    }
+
+
     public void saveFactions() {
         savedData.setFactions(factions);
     }

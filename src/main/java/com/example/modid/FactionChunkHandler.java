@@ -14,7 +14,6 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public class FactionChunkHandler {
 
@@ -22,7 +21,6 @@ public class FactionChunkHandler {
     private final Map<ChunkPos, Faction> chunkOwnershipMap = new HashMap<>();
     // Optimized map for storing player faction for fast lookup
     private static final Map<EntityPlayer, Faction> playerFactionMap = new HashMap<>();
-
 
     // Listen to when a player enters a new chunk
     @SubscribeEvent
@@ -55,7 +53,7 @@ public class FactionChunkHandler {
         Faction faction = chunkOwnershipMap.get(chunkPos);
 
         if (faction != null) {
-            Faction playerFaction = getPlayerFaction(player).orElse(null);
+            Faction playerFaction = FactionManager.getInstance(player.getEntityWorld()).getFactionByPlayer(player).orElse(null);
 
             // Check if the player is in the faction or their faction is at war with the owner faction
             if (playerFaction == null || (!faction.getMembers().contains(player)
@@ -65,18 +63,6 @@ public class FactionChunkHandler {
                         " blocks in " + faction.getName() + "'s territory!"));
             }
         }
-    }
-
-    // Helper method to find which faction a player belongs to using an Optional
-    public static Optional<Faction> getPlayerFaction(EntityPlayer player) {
-        return Optional.ofNullable(playerFactionMap.computeIfAbsent(player, p -> {
-            for (Faction faction : FactionManager.getInstance(player.getEntityWorld()).getFactions()) {
-                if (faction.getMembers().contains(p)) {
-                    return faction;
-                }
-            }
-            return null;
-        }));
     }
 
     // Load claimed chunks into the map when the chunk loads

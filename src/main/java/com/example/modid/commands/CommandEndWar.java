@@ -8,7 +8,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
 
-import static com.example.modid.FactionChunkHandler.getPlayerFaction;
+import static com.example.modid.FactionManager.getFactionByPlayer;
 
 public class CommandEndWar extends CommandBase {
 
@@ -28,7 +28,7 @@ public class CommandEndWar extends CommandBase {
             EntityPlayer player = (EntityPlayer) sender;
             FactionManager factionManager = FactionManager.getInstance(sender.getEntityWorld());
 
-            Faction playerFaction = getPlayerFaction(player).orElse(null);
+            Faction playerFaction = getFactionByPlayer(player).orElse(null);
             Faction enemyFaction = factionManager.getFaction(args[0]);
 
             if (playerFaction != null && enemyFaction != null) {
