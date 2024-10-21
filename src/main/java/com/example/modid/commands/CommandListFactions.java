@@ -26,6 +26,7 @@ public class CommandListFactions extends CommandBase {
         if (sender instanceof EntityPlayer) {
             EntityPlayer player = (EntityPlayer) sender;
 
+            // Get the factions from the FactionManager
             Set<Faction> factions = FactionManager.getInstance(sender.getEntityWorld()).getFactions();
 
             if (factions.isEmpty()) {
@@ -39,4 +40,3 @@ public class CommandListFactions extends CommandBase {
         }
     }
 }
-

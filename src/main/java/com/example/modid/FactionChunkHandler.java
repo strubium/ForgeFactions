@@ -10,19 +10,33 @@ import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
+import net.minecraft.world.World;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 public class FactionChunkHandler {
 
-    // Optimized data structure to quickly look up which faction owns a chunk
     private final Map<ChunkPos, Faction> chunkOwnershipMap = new HashMap<>();
-    // Optimized map for storing player faction for fast lookup
     private static final Map<EntityPlayer, Faction> playerFactionMap = new HashMap<>();
+    private FactionSavedData factionSavedData;
 
-    // Listen to when a player enters a new chunk
+    public FactionChunkHandler(World world) {
+        this.factionSavedData = new FactionSavedData(world);
+        loadFactionData();
+    }
+
+    private void loadFactionData() {
+        // Load factions from saved data into the chunkOwnershipMap
+        for (Map.Entry<String, Faction> entry : factionSavedData.getFactions().entrySet()) {
+            Faction faction = entry.getValue();
+            for (ChunkPos chunkPos : faction.getClaimedChunks()) {
+                chunkOwnershipMap.put(chunkPos, faction);
+            }
+        }
+        System.out.println("Loaded factions into chunk ownership map.");
+    }
+
     @SubscribeEvent
     public void onPlayerTick(PlayerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
@@ -36,7 +50,6 @@ public class FactionChunkHandler {
         }
     }
 
-    // Prevent unauthorized block placement or breaking
     @SubscribeEvent
     public void onBlockBreak(BlockEvent.BreakEvent event) {
         handleBlockAction(event.getPos(), event.getPlayer(), event, false);
@@ -47,7 +60,6 @@ public class FactionChunkHandler {
         handleBlockAction(event.getPos(), event.getPlayer(), event, true);
     }
 
-    // Helper to handle block breaking and placing logic
     private void handleBlockAction(BlockPos blockPos, EntityPlayer player, BlockEvent event, boolean isPlacing) {
         ChunkPos chunkPos = new ChunkPos(blockPos);
         Faction faction = chunkOwnershipMap.get(chunkPos);
@@ -55,7 +67,6 @@ public class FactionChunkHandler {
         if (faction != null) {
             Faction playerFaction = FactionManager.getInstance(player.getEntityWorld()).getFactionByPlayer(player).orElse(null);
 
-            // Check if the player is in the faction or their faction is at war with the owner faction
             if (playerFaction == null || (!faction.getMembers().contains(player)
                     && !FactionManager.getInstance(player.getEntityWorld()).areAtWar(faction, playerFaction))) {
                 event.setCanceled(true);
@@ -65,18 +76,16 @@ public class FactionChunkHandler {
         }
     }
 
-    // Load claimed chunks into the map when the chunk loads
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event) {
         ChunkPos chunkPos = event.getChunk().getPos();
-        for (Faction faction : FactionManager.getInstance(event.getWorld()).getFactions()) {
+        for (Faction faction : factionSavedData.getFactions().values()) {
             if (faction.getClaimedChunks().contains(chunkPos)) {
                 chunkOwnershipMap.put(chunkPos, faction);
             }
         }
     }
 
-    // Clean up chunk from the map when the chunk unloads
     @SubscribeEvent
     public void onChunkUnload(ChunkEvent.Unload event) {
         ChunkPos chunkPos = event.getChunk().getPos();

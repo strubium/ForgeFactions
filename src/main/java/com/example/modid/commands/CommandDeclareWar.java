@@ -1,15 +1,13 @@
 package com.example.modid.commands;
 
 import com.example.modid.Faction;
-import com.example.modid.FactionChunkHandler;
 import com.example.modid.FactionManager;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
-
-import static com.example.modid.FactionManager.getFactionByPlayer;
 
 public class CommandDeclareWar extends CommandBase {
 
@@ -25,15 +23,17 @@ public class CommandDeclareWar extends CommandBase {
 
     @Override
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
-        if (sender instanceof EntityPlayer) {
-            EntityPlayer player = (EntityPlayer) sender;
+        if (sender instanceof EntityPlayerMP) {  // Use EntityPlayerMP for server-side commands
+            EntityPlayerMP player = (EntityPlayerMP) sender;
             FactionManager factionManager = FactionManager.getInstance(server.getEntityWorld());
 
-            Faction playerFaction = getFactionByPlayer(player).orElse(null);
+            // Use the factions directly from factionManager
+            Faction playerFaction = getPlayerFaction(player, factionManager);
             Faction enemyFaction = factionManager.getFaction(args[0]);
 
             if (playerFaction != null && enemyFaction != null) {
-                if (playerFaction.getLeader().equals(player)) {
+                // Check if the player is the faction leader
+                if (playerFaction.getLeader().getUniqueID().equals(player.getUniqueID())) {
                     factionManager.declareWar(playerFaction, enemyFaction);
                     player.sendMessage(new TextComponentString("War declared on " + enemyFaction.getName() + "!"));
                 } else {
@@ -44,5 +44,16 @@ public class CommandDeclareWar extends CommandBase {
             }
         }
     }
-}
 
+    // Utility method to find the player's faction based on UUID comparison
+    private Faction getPlayerFaction(EntityPlayerMP player, FactionManager factionManager) {
+        for (Faction faction : factionManager.getFactions()) {  // Directly iterate over the Set
+            for (EntityPlayer member : faction.getMembers()) {
+                if (member.getUniqueID().equals(player.getUniqueID())) {
+                    return faction;  // Return the faction if the player's UUID matches a member's UUID
+                }
+            }
+        }
+        return null;  // Player is not in any faction
+    }
+}
