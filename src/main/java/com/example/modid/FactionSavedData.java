@@ -49,7 +49,7 @@ public class FactionSavedData {
                 Files.move(tempFile, savePath);
             } catch (FileAlreadyExistsException e) {
                 // If the file already exists, overwrite it
-                ExampleMod.LOGGER.warn("File already exists, overwriting: " + savePath);
+                ForgeFactions.LOGGER.warn("File already exists, overwriting: " + savePath);
                 Files.delete(savePath); // Delete the existing file
                 Files.move(tempFile, savePath); // Move the temp file to the original path
             }

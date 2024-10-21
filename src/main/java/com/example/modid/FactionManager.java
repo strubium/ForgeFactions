@@ -38,7 +38,7 @@ public class FactionManager {
 
     public static Optional<Faction> getFactionByPlayer(EntityPlayer player) {
         return factions.values().stream()
-                .filter(faction -> faction.getMembers().contains(player))
+                .filter(faction -> faction.getMembers().contains(player.getUniqueID()))
                 .findFirst();
     }
 
