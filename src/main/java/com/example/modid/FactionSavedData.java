@@ -2,16 +2,12 @@ package com.example.modid;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.registry.GameRegistry;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -31,14 +27,23 @@ public class FactionSavedData {
     private final Gson gson;
 
     public FactionSavedData(World world) {
-        this.gson = new GsonBuilder().setPrettyPrinting().create();
+        // Enable pretty printing and serialization of null values
+        this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().registerTypeAdapter(Faction.class, new FactionAdapter()).create();
+        // Define the save path based on the world directory
         this.savePath = Paths.get(world.getSaveHandler().getWorldDirectory().getPath(), DATA_FILE);
+        // Load existing data or initialize a new map
         load();
     }
 
     public void save() {
-        try (BufferedWriter writer = Files.newBufferedWriter(savePath)) {
-            gson.toJson(factions, writer);
+        Path tempFile = savePath.resolveSibling(DATA_FILE + ".tmp"); // Temporary file for safe writes
+        try (BufferedWriter writer = Files.newBufferedWriter(tempFile)) {
+            // Convert factions map to JSON
+            String jsonOutput = gson.toJson(factions);
+            System.out.println(jsonOutput); // Print the JSON for validation
+            writer.write(jsonOutput);
+            // Replace the original file with the temporary file atomically
+            Files.move(tempFile, savePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -48,18 +53,35 @@ public class FactionSavedData {
         if (Files.exists(savePath)) {
             try (BufferedReader reader = Files.newBufferedReader(savePath)) {
                 Type factionMapType = new TypeToken<Map<String, Faction>>() {}.getType();
-                factions = gson.fromJson(reader, factionMapType);
+
+                // Read the JSON as a string and print it for debugging
+                String rawJson = new String(Files.readAllBytes(savePath));
+                System.out.println("Raw JSON: " + rawJson);  // Debugging output
+
+                // Attempt to parse the JSON
+                factions = gson.fromJson(rawJson, factionMapType);
+
+                // Handle the case where the loaded data is null
+                if (factions == null) {
+                    System.out.println("Loaded factions are null, initializing new map.");
+                    factions = new HashMap<>();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (JsonSyntaxException e) {
+                // Handle the case of malformed JSON
+                System.err.println("Invalid JSON in " + savePath + ": " + e.getMessage());
+                factions = new HashMap<>(); // Fallback to an empty map
             }
         } else {
-            factions = new HashMap<>(); // Initialize factions if the file does not exist
+            // Initialize factions if the file does not exist
+            factions = new HashMap<>();
         }
     }
 
     public void setFactions(Map<String, Faction> factions) {
         this.factions = factions;
-        save();  // Save whenever factions are set
+        save();  // Save the factions whenever they're updated
     }
 
     public Map<String, Faction> getFactions() {

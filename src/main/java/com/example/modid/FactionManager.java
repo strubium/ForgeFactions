@@ -7,13 +7,13 @@ import java.util.*;
 
 public class FactionManager {
     private static FactionManager instance;
-    private Map<String, Faction> factions;
+    private Map<String, Faction> factions;  // Now synchronized with FactionSavedData
     private FactionSavedData savedData;
 
-
     private FactionManager(World world) {
-        this.factions = new HashMap<>();
+        // Load factions from saved data
         this.savedData = new FactionSavedData(world);
+        this.factions = savedData.getFactions();  // Load factions from FactionSavedData
     }
 
     public static FactionManager getInstance(World world) {
@@ -23,44 +23,51 @@ public class FactionManager {
         return instance;
     }
 
+    // Create a new faction and save the updated factions map
     public Faction createFaction(String name, EntityPlayer leader) {
         Faction faction = new Faction(name, leader);
         factions.put(name, faction);
+        savedData.setFactions(factions);  // Save the updated factions map
         return faction;
     }
 
+    // Get an existing faction by name
     public Faction getFaction(String name) {
         return factions.get(name);
     }
 
+    // Disband a faction and save the updated factions map
     public void disbandFaction(String name) {
         factions.remove(name);
+        savedData.setFactions(factions);  // Save the updated factions map
     }
 
+    // Return all factions as an unmodifiable set
     public Set<Faction> getFactions() {
-        // Get the map of factions
-        Map<String, Faction> factionsMap = savedData.getFactions();
-
-        // Return an unmodifiable set of the factions
-        return Collections.unmodifiableSet(new HashSet<>(factionsMap.values()));
+        return Collections.unmodifiableSet(new HashSet<>(factions.values()));
     }
 
+    // Declare war between two factions and save the updated factions map
     public void declareWar(Faction faction1, Faction faction2) {
         faction1.declareWar(faction2);
         faction2.declareWar(faction1);  // Mutual war declaration
+        savedData.setFactions(factions);  // Save the updated factions map
     }
 
+    // End war between two factions and save the updated factions map
     public void endWar(Faction faction1, Faction faction2) {
         faction1.endWar(faction2);
         faction2.endWar(faction1);  // End war for both factions
+        savedData.setFactions(factions);  // Save the updated factions map
     }
 
+    // Check if two factions are at war
     public boolean areAtWar(Faction faction1, Faction faction2) {
         return faction1.isAtWarWith(faction2);
     }
 
-    // New method to check if a faction with the given name exists
+    // Check if a faction with the given name exists
     public boolean factionExists(String factionName) {
-        return factions.containsKey(factionName);  // Check if the faction name exists in the map
+        return factions.containsKey(factionName);
     }
 }
