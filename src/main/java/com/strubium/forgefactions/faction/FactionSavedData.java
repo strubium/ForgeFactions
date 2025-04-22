@@ -1,13 +1,11 @@
-package com.example.modid;
+package com.strubium.forgefactions.faction;
 
+import com.strubium.forgefactions.ForgeFactions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -17,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class FactionSavedData {
 

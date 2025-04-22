@@ -1,4 +1,4 @@
-package com.example.modid;
+package com.strubium.forgefactions.faction;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.world.World;

@@ -1,6 +1,9 @@
-package com.example.modid;
+package com.strubium.forgefactions;
 
-import com.example.modid.commands.*;
+import com.example.forgefactions.Tags;
+import com.strubium.forgefactions.commands.*;
+import com.strubium.forgefactions.faction.FactionChunkHandler;
+import com.strubium.forgefactions.faction.FactionSavedData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;

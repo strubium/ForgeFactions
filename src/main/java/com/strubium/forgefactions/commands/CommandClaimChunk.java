@@ -1,11 +1,10 @@
-package com.example.modid.commands;
+package com.strubium.forgefactions.commands;
 
-import com.example.modid.Faction;
-import com.example.modid.FactionSavedData;
+import com.strubium.forgefactions.faction.Faction;
+import com.strubium.forgefactions.faction.FactionSavedData;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.ChunkPos;

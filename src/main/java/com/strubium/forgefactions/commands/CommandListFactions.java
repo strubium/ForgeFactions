@@ -1,7 +1,7 @@
-package com.example.modid.commands;
+package com.strubium.forgefactions.commands;
 
-import com.example.modid.Faction;
-import com.example.modid.FactionManager;
+import com.strubium.forgefactions.faction.Faction;
+import com.strubium.forgefactions.faction.FactionManager;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;

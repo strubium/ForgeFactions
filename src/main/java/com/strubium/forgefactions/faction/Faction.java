@@ -1,4 +1,4 @@
-package com.example.modid;
+package com.strubium.forgefactions.faction;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.EntityPlayer;
@@ -8,7 +8,6 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 public class Faction {
     private String name;

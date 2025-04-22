@@ -1,4 +1,4 @@
-package com.example.modid;
+package com.strubium.forgefactions.faction;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
