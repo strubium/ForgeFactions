@@ -1,20 +1,23 @@
 package com.example.modid;
 
+import com.mojang.authlib.GameProfile;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import com.google.gson.annotations.Expose;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.math.ChunkPos;
+import java.util.UUID;
 
 public class Faction {
     private String name;
-    private EntityPlayer leader;
-    private Set<EntityPlayer> members;
+    private GameProfile leader;  // Changed to GameProfile
+    private Set<GameProfile> members;  // Changed to Set of GameProfiles
     private Set<ChunkPos> claimedChunks;
     private Set<Faction> enemies;  // Track factions at war
 
-    public Faction(String name, EntityPlayer leader) {
+    public Faction(String name, GameProfile leader) {
         this.name = name;
         this.leader = leader;
         this.members = new HashSet<>();
@@ -29,21 +32,21 @@ public class Faction {
         this.members = new HashSet<>();
         this.claimedChunks = new HashSet<>();
         this.enemies = new HashSet<>();  // Initialize enemies list
-        members.add(leader);
     }
 
     public String getName() {
         return name;
     }
 
-    public EntityPlayer getLeader() {
+    public GameProfile getLeader() {
         return leader;
     }
 
-    public Set<EntityPlayer> getMembers() {
+    public Set<GameProfile> getMembers() {
         return members;
     }
-    public void setMembers(Set<EntityPlayer> members) {
+
+    public void setMembers(Set<GameProfile> members) {
         this.members.clear();
         this.members.addAll(members); // Set new members
     }
@@ -57,11 +60,11 @@ public class Faction {
         this.enemies.addAll(enemies); // Set new enemies
     }
 
-    public void addMember(EntityPlayer player) {
+    public void addMember(GameProfile player) {
         members.add(player);
     }
 
-    public void removeMember(EntityPlayer player) {
+    public void removeMember(GameProfile player) {
         members.remove(player);
     }
 
@@ -76,7 +79,21 @@ public class Faction {
 
     public void claimChunk(ChunkPos chunkPos) {
         claimedChunks.add(chunkPos);
-        FactionManager.getInstance(this.leader.getEntityWorld()).saveFactions();
+
+        // Resolve the leader EntityPlayer using the GameProfile
+        EntityPlayer player = resolvePlayerByGameProfile(leader);
+        if (player != null) {
+            // Use the resolved EntityPlayer to get the world
+            FactionManager.getInstance(player.getEntityWorld()).saveFactions();
+        }
+    }
+
+    private EntityPlayer resolvePlayerByGameProfile(GameProfile gameProfile) {
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        if (server != null) {
+            return server.getPlayerList().getPlayerByUUID(gameProfile.getId());  // Resolve player from UUID
+        }
+        return null;  // Return null if player is not online or not found
     }
 
     public void unclaimChunk(ChunkPos chunkPos) {
@@ -99,7 +116,7 @@ public class Faction {
         this.name = name;
     }
 
-    public void setLeader(EntityPlayer leader) {
+    public void setLeader(GameProfile leader) {
         this.leader = leader;
     }
 }

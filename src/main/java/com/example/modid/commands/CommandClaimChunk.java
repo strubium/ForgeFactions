@@ -2,6 +2,7 @@ package com.example.modid.commands;
 
 import com.example.modid.Faction;
 import com.example.modid.FactionSavedData;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
@@ -67,8 +68,8 @@ public class CommandClaimChunk extends CommandBase {
 
         for (Faction faction : factionData.getFactions().values()) {
             // Loop through each member in the faction, which are EntityPlayer objects
-            for (EntityPlayer member : faction.getMembers()) {
-                if (member.getUniqueID().equals(playerUUID)) {
+            for (GameProfile member : faction.getMembers()) {
+                if (member.getId().equals(playerUUID)) {
                     return faction;  // Return the faction if the player's UUID matches a member's UUID
                 }
             }

@@ -65,7 +65,7 @@ public class FactionChunkHandler {
         Faction faction = chunkOwnershipMap.get(chunkPos);
 
         if (faction != null) {
-            Faction playerFaction = FactionManager.getInstance(player.getEntityWorld()).getFactionByPlayer(player).orElse(null);
+            Faction playerFaction = FactionManager.getInstance(player.getEntityWorld()).getFactionByPlayer(player.getGameProfile()).orElse(null);
 
             if (playerFaction == null || (!faction.getMembers().contains(player)
                     && !FactionManager.getInstance(player.getEntityWorld()).areAtWar(faction, playerFaction))) {

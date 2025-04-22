@@ -2,6 +2,7 @@ package com.example.modid.commands;
 
 import com.example.modid.Faction;
 import com.example.modid.FactionManager;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
@@ -33,7 +34,7 @@ public class CommandDeclareWar extends CommandBase {
 
             if (playerFaction != null && enemyFaction != null) {
                 // Check if the player is the faction leader
-                if (playerFaction.getLeader().getUniqueID().equals(player.getUniqueID())) {
+                if (playerFaction.getLeader().getId().equals(player.getUniqueID())) {
                     factionManager.declareWar(playerFaction, enemyFaction);
                     player.sendMessage(new TextComponentString("War declared on " + enemyFaction.getName() + "!"));
                 } else {
@@ -48,8 +49,8 @@ public class CommandDeclareWar extends CommandBase {
     // Utility method to find the player's faction based on UUID comparison
     private Faction getPlayerFaction(EntityPlayerMP player, FactionManager factionManager) {
         for (Faction faction : factionManager.getFactions()) {  // Directly iterate over the Set
-            for (EntityPlayer member : faction.getMembers()) {
-                if (member.getUniqueID().equals(player.getUniqueID())) {
+            for (GameProfile member : faction.getMembers()) {
+                if (member.getId().equals(player.getUniqueID())) {
                     return faction;  // Return the faction if the player's UUID matches a member's UUID
                 }
             }

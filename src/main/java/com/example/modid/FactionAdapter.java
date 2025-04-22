@@ -2,7 +2,9 @@ package com.example.modid;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.ChunkPos;
@@ -22,18 +24,24 @@ public class FactionAdapter extends TypeAdapter<Faction> {
         // Serialize faction name
         out.name("name").value(faction.getName());
 
-        // Serialize leader as UUID
-        if (faction.getLeader() != null) {
-            out.name("leaderUUID").value(faction.getLeader().getUniqueID().toString());
+        // Serialize leader as GameProfile (UUID + Name)
+        GameProfile leader = faction.getLeader();
+        if (leader != null) {
+            out.name("leaderUUID").value(leader.getId().toString());
+            out.name("leaderName").value(leader.getName());
         } else {
             out.name("leaderUUID").nullValue();
+            out.name("leaderName").nullValue();
         }
 
-        // Serialize members as a set of UUIDs
+        // Serialize members as GameProfiles (UUID + Name)
         out.name("members");
         out.beginArray();
-        for (EntityPlayer member : faction.getMembers()) {
-            out.value(member.getUniqueID().toString());
+        for (GameProfile profile : faction.getMembers()) {
+            out.beginObject();
+            out.name("uuid").value(profile.getId().toString());
+            out.name("name").value(profile.getName());
+            out.endObject();
         }
         out.endArray();
 
@@ -62,10 +70,10 @@ public class FactionAdapter extends TypeAdapter<Faction> {
     @Override
     public Faction read(JsonReader in) throws IOException {
         Faction faction = new Faction(); // Assume you have a default constructor
-        Set<EntityPlayer> members = new HashSet<>();
+        Set<GameProfile> members = new HashSet<>();
         Set<ChunkPos> claimedChunks = new HashSet<>();
         Set<Faction> enemies = new HashSet<>();
-        UUID leaderUUID = null;
+        GameProfile leaderProfile = null;
 
         in.beginObject();
         while (in.hasNext()) {
@@ -75,19 +83,42 @@ public class FactionAdapter extends TypeAdapter<Faction> {
                     faction.setName(in.nextString());
                     break;
                 case "leaderUUID":
-                    String uuidString = in.nextString();
-                    if (uuidString != null && !uuidString.isEmpty()) {
-                        leaderUUID = UUID.fromString(uuidString);
+                    if (in.peek() == JsonToken.NULL) {
+                        in.nextNull();
+                    } else {
+                        UUID leaderUUID = UUID.fromString(in.nextString());
+                        // name will be read later
+                        leaderProfile = new GameProfile(leaderUUID, null);
+                    }
+                    break;
+                case "leaderName":
+                    if (leaderProfile != null && in.peek() != JsonToken.NULL) {
+                        leaderProfile = new GameProfile(leaderProfile.getId(), in.nextString());
+                    } else {
+                        in.skipValue();
                     }
                     break;
                 case "members":
                     in.beginArray();
                     while (in.hasNext()) {
-                        String memberUUIDString = in.nextString();
-                        UUID memberUUID = UUID.fromString(memberUUIDString);
-                        EntityPlayer member = resolvePlayerByUUID(memberUUID);
-                        if (member != null) {
-                            members.add(member);
+                        UUID uuid = null;
+                        String name = null;
+                        in.beginObject();
+                        while (in.hasNext()) {
+                            switch (in.nextName()) {
+                                case "uuid":
+                                    uuid = UUID.fromString(in.nextString());
+                                    break;
+                                case "name":
+                                    name = in.nextString();
+                                    break;
+                                default:
+                                    in.skipValue();
+                            }
+                        }
+                        in.endObject();
+                        if (uuid != null) {
+                            members.add(new GameProfile(uuid, name));
                         }
                     }
                     in.endArray();
@@ -95,14 +126,13 @@ public class FactionAdapter extends TypeAdapter<Faction> {
                 case "claimedChunks":
                     in.beginArray();
                     while (in.hasNext()) {
-                        in.beginObject();
                         int x = 0, z = 0;
+                        in.beginObject();
                         while (in.hasNext()) {
-                            String chunkField = in.nextName();
-                            if (chunkField.equals("x")) {
-                                x = in.nextInt();
-                            } else if (chunkField.equals("z")) {
-                                z = in.nextInt();
+                            switch (in.nextName()) {
+                                case "x": x = in.nextInt(); break;
+                                case "z": z = in.nextInt(); break;
+                                default: in.skipValue();
                             }
                         }
                         in.endObject();
@@ -113,26 +143,23 @@ public class FactionAdapter extends TypeAdapter<Faction> {
                 case "enemies":
                     in.beginArray();
                     while (in.hasNext()) {
-                        String enemyFactionName = in.nextString();
-                        Faction enemyFaction = resolveFactionByName(enemyFactionName);
-                        if (enemyFaction != null) {
-                            enemies.add(enemyFaction);
+                        String enemyName = in.nextString();
+                        Faction enemy = resolveFactionByName(enemyName);
+                        if (enemy != null) {
+                            enemies.add(enemy);
                         }
                     }
                     in.endArray();
                     break;
                 default:
-                    in.skipValue();  // Skip unknown fields
+                    in.skipValue();
                     break;
             }
         }
         in.endObject();
 
-        // Resolve leader by UUID
-        if (leaderUUID != null) {
-            faction.setLeader(resolvePlayerByUUID(leaderUUID));
-        }
-
+        // Set the leader using the resolved GameProfile
+        faction.setLeader(leaderProfile);
         faction.setMembers(members);
         faction.setClaimedChunks(claimedChunks);
         faction.setEnemies(enemies);
@@ -142,6 +169,7 @@ public class FactionAdapter extends TypeAdapter<Faction> {
 
     /**
      * Helper method to resolve an EntityPlayer by UUID.
+     * Resolves a player if they are online using the MinecraftServer.
      */
     private EntityPlayer resolvePlayerByUUID(UUID uuid) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
@@ -156,6 +184,6 @@ public class FactionAdapter extends TypeAdapter<Faction> {
      * This will depend on how you're managing factions in your mod.
      */
     private Faction resolveFactionByName(String factionName) {
-        return FactionManager.getFaction(factionName);
+        return FactionManager.getFaction(factionName);  // Adjust this method based on your FactionManager setup
     }
 }

@@ -1,6 +1,6 @@
 package com.example.modid;
 
-import net.minecraft.entity.player.EntityPlayer;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.world.World;
 
 import java.util.*;
@@ -24,7 +24,7 @@ public class FactionManager {
     }
 
     // Create a new faction and save the updated factions map
-    public Faction createFaction(String name, EntityPlayer leader) {
+    public Faction createFaction(String name, GameProfile leader) {
         Faction faction = new Faction(name, leader);
         factions.put(name, faction);
         savedData.setFactions(factions);  // Save the updated factions map
@@ -36,12 +36,11 @@ public class FactionManager {
         return factions.get(name);
     }
 
-    public static Optional<Faction> getFactionByPlayer(EntityPlayer player) {
+    public static Optional<Faction> getFactionByPlayer(GameProfile player) {
         return factions.values().stream()
-                .filter(faction -> faction.getMembers().contains(player.getUniqueID()))
+                .filter(faction -> faction.getMembers().contains(player))
                 .findFirst();
     }
-
 
     public void saveFactions() {
         savedData.setFactions(factions);
